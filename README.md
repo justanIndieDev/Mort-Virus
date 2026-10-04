@@ -10,13 +10,6 @@ A harmless browser-based Mort apocalypse.
 - The supplied Mort voice clip plays on each spawn.
 - Everything runs locally in the browser. There is no backend, persistence, file access, or system access.
 
-## Required assets
-
-The project expects these two files in the repository root:
-
-- `mort.png` — the exact Mort image for the project.
-- `mort-voice.mp3` — the supplied Mort voice clip.
-
 ## Hosting
 
 This is designed to work as a static GitHub Pages site.
