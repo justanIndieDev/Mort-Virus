@@ -1,6 +1,14 @@
 const playfield = document.getElementById("playfield");
-const mortLayer = document.getElementById("morts");
 const voice = document.getElementById("mortVoice");
+
+const WINDOW_SIZE = 400;
+const MIN_SPEED = 3;
+const MAX_SPEED = 7;
+const mortWindows = [];
+
+function randomBetween(min, max) {
+  return Math.random() * (max - min) + min;
+}
 
 function playVoice() {
   if (!voice) return;
@@ -8,112 +16,93 @@ function playVoice() {
   voice.play().catch(() => {});
 }
 
-// Windows opened by this page are moved by their opener.
-// This is more reliable than a popup trying to move itself.
-const movingWindows = [];
+function createMortWindow() {
+  const element = document.createElement("div");
+  element.className = "mort-window";
 
-function openMortWindow() {
-  const screenLeft = window.screen.availLeft;
-  const screenTop = window.screen.availTop;
-  const screenWidth = window.screen.availWidth;
-  const screenHeight = window.screen.availHeight;
+  const image = document.createElement("img");
+  image.src = "assets/mort.jpg";
+  image.alt = "";
+  image.className = "mort";
 
-  const width = 400;
-  const height = 400;
-  const left = Math.round(
-    screenLeft + Math.random() * Math.max(0, screenWidth - width)
-  );
-  const top = Math.round(
-    screenTop + Math.random() * Math.max(0, screenHeight - height)
-  );
+  element.appendChild(image);
+  playfield.appendChild(element);
 
-  const features = [
-    "popup=yes",
-    `width=${width}`,
-    `height=${height}`,
-    `left=${left}`,
-    `top=${top}`,
-    "resizable=yes",
-    "scrollbars=no"
-  ].join(",");
+  const maxX = Math.max(0, playfield.clientWidth - WINDOW_SIZE);
+  const maxY = Math.max(0, playfield.clientHeight - WINDOW_SIZE);
+  const angle = randomBetween(0, Math.PI * 2);
+  const speed = randomBetween(MIN_SPEED, MAX_SPEED);
 
-  const child = window.open(
-    `${window.location.pathname}?mort=1${window.location.hash}`,
-    "_blank",
-    features
-  );
+  const instance = {
+    element,
+    x: randomBetween(0, maxX),
+    y: randomBetween(0, maxY),
+    vx: Math.cos(angle) * speed,
+    vy: Math.sin(angle) * speed
+  };
 
-  if (child) {
-    try {
-      child.focus();
-    } catch (_) {}
-
-    movingWindows.push({
-      window: child,
-      x: left,
-      y: top,
-      vx: 4 + Math.random() * 2,
-      vy: 3 + Math.random() * 2
-    });
-  }
+  mortWindows.push(instance);
 }
 
 function handleKeyDown(event) {
   if (event.key === "Escape") {
-    window.close();
+    document.body.innerHTML = "";
+    document.body.style.background = "white";
     return;
   }
 
   playVoice();
-  openMortWindow();
+  createMortWindow();
 }
 
-window.addEventListener("keydown", handleKeyDown);
+function animate(now) {
+  const dt = Math.min((now - animate.lastTime) / 16.67, 2);
+  animate.lastTime = now;
 
-function animatePopups() {
-  const screenLeft = window.screen.availLeft;
-  const screenTop = window.screen.availTop;
-  const screenRight = screenLeft + window.screen.availWidth;
-  const screenBottom = screenTop + window.screen.availHeight;
+  const width = playfield.clientWidth;
+  const height = playfield.clientHeight;
 
-  for (let i = movingWindows.length - 1; i >= 0; i--) {
-    const item = movingWindows[i];
+  for (const item of mortWindows) {
+    item.x += item.vx * dt;
+    item.y += item.vy * dt;
 
-    if (item.window.closed) {
-      movingWindows.splice(i, 1);
-      continue;
-    }
+    const maxX = Math.max(0, width - WINDOW_SIZE);
+    const maxY = Math.max(0, height - WINDOW_SIZE);
 
-    const width = item.window.outerWidth || 400;
-    const height = item.window.outerHeight || 400;
-    const maxX = screenRight - width;
-    const maxY = screenBottom - height;
-
-    item.x += item.vx;
-    item.y += item.vy;
-
-    if (item.x <= screenLeft) {
-      item.x = screenLeft;
+    if (item.x <= 0) {
+      item.x = 0;
       item.vx = Math.abs(item.vx);
     } else if (item.x >= maxX) {
       item.x = maxX;
       item.vx = -Math.abs(item.vx);
     }
 
-    if (item.y <= screenTop) {
-      item.y = screenTop;
+    if (item.y <= 0) {
+      item.y = 0;
       item.vy = Math.abs(item.vy);
     } else if (item.y >= maxY) {
       item.y = maxY;
       item.vy = -Math.abs(item.vy);
     }
 
-    try {
-      item.window.moveTo(Math.round(item.x), Math.round(item.y));
-    } catch (_) {}
+    item.element.style.transform =
+      `translate3d(${item.x}px, ${item.y}px, 0)`;
   }
 
-  requestAnimationFrame(animatePopups);
+  requestAnimationFrame(animate);
 }
 
-requestAnimationFrame(animatePopups);
+window.addEventListener("keydown", handleKeyDown);
+window.addEventListener("resize", () => {
+  const width = playfield.clientWidth;
+  const height = playfield.clientHeight;
+
+  for (const item of mortWindows) {
+    item.x = Math.min(item.x, Math.max(0, width - WINDOW_SIZE));
+    item.y = Math.min(item.y, Math.max(0, height - WINDOW_SIZE));
+  }
+});
+
+createMortWindow();
+animate.lastTime = performance.now();
+requestAnimationFrame(animate);
