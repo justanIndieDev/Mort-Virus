@@ -74,7 +74,7 @@ function openMortWindow() {
 }
 
 function handleKeyDown(event) {
-  if (event.key === "Escape") return;
+  if (event.key === "Escape") {\n    window.close();\n    return;\n  }
 
   playVoice();
   openMortWindow();
