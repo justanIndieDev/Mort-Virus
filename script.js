@@ -23,7 +23,7 @@ function randomVelocity() {
   };
 }
 
-function spawnMort() {
+function spawnLocalMort() {
   const mort = document.createElement("img");
   mort.className = "mort";
   mort.src = "mort.png";
@@ -41,23 +41,46 @@ function spawnMort() {
 
   mortLayer.appendChild(mort);
   morts.push(instance);
-
-  counter.textContent = `Morts: ${morts.length}`;
+  counter.textContent = `Morts in this window: ${morts.length}`;
 }
 
 function playVoice() {
-  // Resetting lets every keypress trigger the supplied clip.
   voice.currentTime = 0;
   voice.play().catch(() => {
-    // Browsers can reject playback until the page has received a user gesture.
+    // Playback may be blocked by browser media policy.
   });
+}
+
+function openMortWindow() {
+  // The popup is opened directly from the user's keypress, which gives
+  // browsers the best chance of allowing it as a user-initiated window.
+  const features = [
+    "popup=yes",
+    "width=700",
+    "height=500",
+    "resizable=yes",
+    "scrollbars=no"
+  ].join(",");
+
+  const child = window.open(
+    `${window.location.pathname}?mort=1${window.location.hash}`,
+    "_blank",
+    features
+  );
+
+  // If the browser blocks the popup, the current window still behaves normally.
+  if (child) {
+    try {
+      child.focus();
+    } catch (_) {}
+  }
 }
 
 function handleKeyDown(event) {
   if (event.key === "Escape") return;
 
-  spawnMort();
   playVoice();
+  openMortWindow();
 }
 
 let previousTime = performance.now();
@@ -89,13 +112,15 @@ function animate(now) {
       mort.vy = -Math.abs(mort.vy);
     }
 
-    mort.element.style.transform = `translate3d(${mort.x}px, ${mort.y}px, 0)`;
+    mort.element.style.transform =
+      `translate3d(${mort.x}px, ${mort.y}px, 0)`;
   }
 
   requestAnimationFrame(animate);
 }
 
 window.addEventListener("keydown", handleKeyDown);
+
 window.addEventListener("resize", () => {
   const width = playfield.clientWidth;
   const height = playfield.clientHeight;
@@ -106,5 +131,6 @@ window.addEventListener("resize", () => {
   }
 });
 
-spawnMort();
+// Every browser window starts with exactly one independent Mort.
+spawnLocalMort();
 requestAnimationFrame(animate);
