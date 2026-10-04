@@ -26,7 +26,7 @@ function randomVelocity() {
 function spawnLocalMort() {
   const mort = document.createElement("img");
   mort.className = "mort";
-  mort.src = "mort.png";
+  mort.src = "assets/mort.jpg";
   mort.alt = "";
 
   const maxX = Math.max(0, playfield.clientWidth - MORT_SIZE);
@@ -52,8 +52,6 @@ function playVoice() {
 }
 
 function openMortWindow() {
-  // The popup is opened directly from the user's keypress, which gives
-  // browsers the best chance of allowing it as a user-initiated window.
   const features = [
     "popup=yes",
     "width=700",
@@ -68,7 +66,6 @@ function openMortWindow() {
     features
   );
 
-  // If the browser blocks the popup, the current window still behaves normally.
   if (child) {
     try {
       child.focus();
@@ -131,6 +128,5 @@ window.addEventListener("resize", () => {
   }
 });
 
-// Every browser window starts with exactly one independent Mort.
 spawnLocalMort();
 requestAnimationFrame(animate);
