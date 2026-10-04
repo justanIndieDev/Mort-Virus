@@ -54,8 +54,8 @@ function playVoice() {
 function openMortWindow() {
   const features = [
     "popup=yes",
-    "width=700",
-    "height=500",
+    "width=400",
+    "height=400",
     "resizable=yes",
     "scrollbars=no"
   ].join(",");
