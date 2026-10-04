@@ -1,11 +1,11 @@
 const playfield = document.getElementById("playfield");
 const mortLayer = document.getElementById("morts");
+const counter = document.getElementById("counter");
 const voice = document.getElementById("mortVoice");
 
 const MORT_SIZE = 120;
 const MIN_SPEED = 120;
 const MAX_SPEED = 280;
-const MORT_COUNT = 8;
 
 const morts = [];
 
@@ -16,6 +16,7 @@ function randomBetween(min, max) {
 function randomVelocity() {
   const angle = randomBetween(0, Math.PI * 2);
   const speed = randomBetween(MIN_SPEED, MAX_SPEED);
+
   return {
     x: Math.cos(angle) * speed,
     y: Math.sin(angle) * speed
@@ -23,53 +24,61 @@ function randomVelocity() {
 }
 
 function spawnLocalMort() {
-  const element = document.createElement("img");
-  element.className = "mort";
-  element.src = "assets/mort.jpg";
-  element.alt = "";
+  const mort = document.createElement("img");
+  mort.className = "mort";
+  mort.src = "assets/mort.jpg";
+  mort.alt = "";
 
   const maxX = Math.max(0, playfield.clientWidth - MORT_SIZE);
   const maxY = Math.max(0, playfield.clientHeight - MORT_SIZE);
 
   const instance = {
-    element,
+    element: mort,
     x: randomBetween(0, maxX),
     y: randomBetween(0, maxY),
     ...randomVelocity()
   };
 
-  mortLayer.appendChild(element);
+  mortLayer.appendChild(mort);
   morts.push(instance);
+  counter.textContent = `Morts in this window: ${morts.length}`;
 }
 
 function playVoice() {
-  if (!voice) return;
   voice.currentTime = 0;
-  voice.play().catch(() => {});
+  voice.play().catch(() => {
+    // Playback may be blocked by browser media policy.
+  });
 }
 
-function closeWindow() {
-  window.close();
-  setTimeout(() => {
-    if (!window.closed) {
-      window.open("", "_self");
-      window.close();
-    }
-  }, 50);
-}
+function openMortWindow() {
+  const features = [
+    "popup=yes",
+    "width=400",
+    "height=400",
+    "resizable=yes",
+    "scrollbars=no"
+  ].join(",");
 
-window.addEventListener("keydown", (event) => {
-  if (event.key === "Escape") {
-    event.preventDefault();
-    closeWindow();
-    return;
+  const child = window.open(
+    `${window.location.pathname}?mort=1${window.location.hash}`,
+    "_blank",
+    features
+  );
+
+  if (child) {
+    try {
+      child.focus();
+    } catch (_) {}
   }
+}
+
+function handleKeyDown(event) {
+  if (event.key === "Escape") {\n    window.close();\n    return;\n  }
 
   playVoice();
-  if (morts.length < MORT_COUNT) {
-    spawnLocalMort();
-  }
-});
+  openMortWindow();
+}
 
 let previousTime = performance.now();
 
@@ -107,6 +116,8 @@ function animate(now) {
   requestAnimationFrame(animate);
 }
 
+window.addEventListener("keydown", handleKeyDown);
+
 window.addEventListener("resize", () => {
   const width = playfield.clientWidth;
   const height = playfield.clientHeight;
@@ -117,8 +128,5 @@ window.addEventListener("resize", () => {
   }
 });
 
-for (let i = 0; i < MORT_COUNT; i++) {
-  spawnLocalMort();
-}
-
+spawnLocalMort();
 requestAnimationFrame(animate);
