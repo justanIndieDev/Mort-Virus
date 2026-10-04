@@ -2,46 +2,6 @@ const playfield = document.getElementById("playfield");
 const mortLayer = document.getElementById("morts");
 const voice = document.getElementById("mortVoice");
 
-const MORT_SIZE = 120;
-const MIN_SPEED = 120;
-const MAX_SPEED = 280;
-
-const morts = [];
-
-function randomBetween(min, max) {
-  return Math.random() * (max - min) + min;
-}
-
-function randomVelocity() {
-  const angle = randomBetween(0, Math.PI * 2);
-  const speed = randomBetween(MIN_SPEED, MAX_SPEED);
-
-  return {
-    vx: Math.cos(angle) * speed,
-    vy: Math.sin(angle) * speed
-  };
-}
-
-function spawnLocalMort() {
-  const mort = document.createElement("img");
-  mort.className = "mort";
-  mort.src = "assets/mort.jpg";
-  mort.alt = "";
-
-  const maxX = Math.max(0, playfield.clientWidth - MORT_SIZE);
-  const maxY = Math.max(0, playfield.clientHeight - MORT_SIZE);
-
-  const instance = {
-    element: mort,
-    x: randomBetween(0, maxX),
-    y: randomBetween(0, maxY),
-    ...randomVelocity()
-  };
-
-  mortLayer.appendChild(mort);
-  morts.push(instance);
-}
-
 function playVoice() {
   if (!voice) return;
   voice.currentTime = 0;
@@ -80,53 +40,66 @@ function handleKeyDown(event) {
   openMortWindow();
 }
 
-let previousTime = performance.now();
+// Keep Mort stationary inside the window.
+const mort = document.querySelector(".mort");
 
-function animate(now) {
-  const dt = Math.min((now - previousTime) / 1000, 0.05);
-  previousTime = now;
+if (mort) {
+  mort.style.position = "absolute";
+  mort.style.left = "50%";
+  mort.style.top = "50%";
+  mort.style.transform = "translate(-50%, -50%)";
+}
 
-  const width = playfield.clientWidth;
-  const height = playfield.clientHeight;
+// Move the popup window itself and bounce it off the screen edges.
+let windowX = window.screenX;
+let windowY = window.screenY;
 
-  for (const mort of morts) {
-    mort.x += mort.vx * dt;
-    mort.y += mort.vy * dt;
+const WINDOW_SPEED = 4;
+let windowVX = WINDOW_SPEED;
+let windowVY = WINDOW_SPEED * 0.8;
 
-    if (mort.x <= 0) {
-      mort.x = 0;
-      mort.vx = Math.abs(mort.vx);
-    } else if (mort.x + MORT_SIZE >= width) {
-      mort.x = Math.max(0, width - MORT_SIZE);
-      mort.vx = -Math.abs(mort.vx);
-    }
+function movePopup() {
+  // Only move windows opened by this Mort page.
+  if (!window.opener) return;
 
-    if (mort.y <= 0) {
-      mort.y = 0;
-      mort.vy = Math.abs(mort.vy);
-    } else if (mort.y + MORT_SIZE >= height) {
-      mort.y = Math.max(0, height - MORT_SIZE);
-      mort.vy = -Math.abs(mort.vy);
-    }
+  const maxX = Math.max(
+    0,
+    window.screen.availLeft + window.screen.availWidth - window.outerWidth
+  );
+  const maxY = Math.max(
+    0,
+    window.screen.availTop + window.screen.availHeight - window.outerHeight
+  );
 
-    mort.element.style.transform =
-      `translate3d(${mort.x}px, ${mort.y}px, 0)`;
+  windowX += windowVX;
+  windowY += windowVY;
+
+  if (windowX <= window.screen.availLeft) {
+    windowX = window.screen.availLeft;
+    windowVX = Math.abs(windowVX);
+  } else if (windowX >= maxX) {
+    windowX = maxX;
+    windowVX = -Math.abs(windowVX);
   }
 
-  requestAnimationFrame(animate);
+  if (windowY <= window.screen.availTop) {
+    windowY = window.screen.availTop;
+    windowVY = Math.abs(windowVY);
+  } else if (windowY >= maxY) {
+    windowY = maxY;
+    windowVY = -Math.abs(windowVY);
+  }
+
+  try {
+    window.moveTo(Math.round(windowX), Math.round(windowY));
+  } catch (_) {}
 }
 
 window.addEventListener("keydown", handleKeyDown);
 
-window.addEventListener("resize", () => {
-  const width = playfield.clientWidth;
-  const height = playfield.clientHeight;
-
-  for (const mort of morts) {
-    mort.x = Math.min(mort.x, Math.max(0, width - MORT_SIZE));
-    mort.y = Math.min(mort.y, Math.max(0, height - MORT_SIZE));
-  }
+window.addEventListener("load", () => {
+  windowX = window.screenX;
+  windowY = window.screenY;
 });
 
-spawnLocalMort();
-requestAnimationFrame(animate);
+setInterval(movePopup, 16);
