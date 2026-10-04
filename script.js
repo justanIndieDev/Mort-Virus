@@ -1,9 +1,13 @@
 const playfield = document.getElementById("playfield");
-const mort = document.getElementById("mort");
+const mortLayer = document.getElementById("morts");
+const voice = document.getElementById("mortVoice");
 
 const MORT_SIZE = 120;
-const MIN_SPEED = 180;
-const MAX_SPEED = 320;
+const MIN_SPEED = 120;
+const MAX_SPEED = 280;
+const MORT_COUNT = 8;
+
+const morts = [];
 
 function randomBetween(min, max) {
   return Math.random() * (max - min) + min;
@@ -12,20 +16,36 @@ function randomBetween(min, max) {
 function randomVelocity() {
   const angle = randomBetween(0, Math.PI * 2);
   const speed = randomBetween(MIN_SPEED, MAX_SPEED);
-  return { x: Math.cos(angle) * speed, y: Math.sin(angle) * speed };
+  return {
+    x: Math.cos(angle) * speed,
+    y: Math.sin(angle) * speed
+  };
 }
 
-let x = 0;
-let y = 0;
-let vx = 0;
-let vy = 0;
+function spawnLocalMort() {
+  const element = document.createElement("img");
+  element.className = "mort";
+  element.src = "assets/mort.jpg";
+  element.alt = "";
 
-function resetPosition() {
   const maxX = Math.max(0, playfield.clientWidth - MORT_SIZE);
   const maxY = Math.max(0, playfield.clientHeight - MORT_SIZE);
-  x = randomBetween(0, maxX);
-  y = randomBetween(0, maxY);
-  ({ x: vx, y: vy } = randomVelocity());
+
+  const instance = {
+    element,
+    x: randomBetween(0, maxX),
+    y: randomBetween(0, maxY),
+    ...randomVelocity()
+  };
+
+  mortLayer.appendChild(element);
+  morts.push(instance);
+}
+
+function playVoice() {
+  if (!voice) return;
+  voice.currentTime = 0;
+  voice.play().catch(() => {});
 }
 
 function closeWindow() {
@@ -42,6 +62,12 @@ window.addEventListener("keydown", (event) => {
   if (event.key === "Escape") {
     event.preventDefault();
     closeWindow();
+    return;
+  }
+
+  playVoice();
+  if (morts.length < MORT_COUNT) {
+    spawnLocalMort();
   }
 });
 
@@ -54,33 +80,45 @@ function animate(now) {
   const width = playfield.clientWidth;
   const height = playfield.clientHeight;
 
-  x += vx * dt;
-  y += vy * dt;
+  for (const mort of morts) {
+    mort.x += mort.vx * dt;
+    mort.y += mort.vy * dt;
 
-  if (x <= 0) {
-    x = 0;
-    vx = Math.abs(vx);
-  } else if (x + MORT_SIZE >= width) {
-    x = Math.max(0, width - MORT_SIZE);
-    vx = -Math.abs(vx);
+    if (mort.x <= 0) {
+      mort.x = 0;
+      mort.vx = Math.abs(mort.vx);
+    } else if (mort.x + MORT_SIZE >= width) {
+      mort.x = Math.max(0, width - MORT_SIZE);
+      mort.vx = -Math.abs(mort.vx);
+    }
+
+    if (mort.y <= 0) {
+      mort.y = 0;
+      mort.vy = Math.abs(mort.vy);
+    } else if (mort.y + MORT_SIZE >= height) {
+      mort.y = Math.max(0, height - MORT_SIZE);
+      mort.vy = -Math.abs(mort.vy);
+    }
+
+    mort.element.style.transform =
+      `translate3d(${mort.x}px, ${mort.y}px, 0)`;
   }
 
-  if (y <= 0) {
-    y = 0;
-    vy = Math.abs(vy);
-  } else if (y + MORT_SIZE >= height) {
-    y = Math.max(0, height - MORT_SIZE);
-    vy = -Math.abs(vy);
-  }
-
-  mort.style.transform = `translate3d(${x}px, ${y}px, 0)`;
   requestAnimationFrame(animate);
 }
 
 window.addEventListener("resize", () => {
-  x = Math.min(x, Math.max(0, playfield.clientWidth - MORT_SIZE));
-  y = Math.min(y, Math.max(0, playfield.clientHeight - MORT_SIZE));
+  const width = playfield.clientWidth;
+  const height = playfield.clientHeight;
+
+  for (const mort of morts) {
+    mort.x = Math.min(mort.x, Math.max(0, width - MORT_SIZE));
+    mort.y = Math.min(mort.y, Math.max(0, height - MORT_SIZE));
+  }
 });
 
-resetPosition();
+for (let i = 0; i < MORT_COUNT; i++) {
+  spawnLocalMort();
+}
+
 requestAnimationFrame(animate);
