@@ -1,6 +1,5 @@
 const playfield = document.getElementById("playfield");
 const mortLayer = document.getElementById("morts");
-const counter = document.getElementById("counter");
 const voice = document.getElementById("mortVoice");
 
 const MORT_SIZE = 120;
@@ -18,8 +17,8 @@ function randomVelocity() {
   const speed = randomBetween(MIN_SPEED, MAX_SPEED);
 
   return {
-    x: Math.cos(angle) * speed,
-    y: Math.sin(angle) * speed
+    vx: Math.cos(angle) * speed,
+    vy: Math.sin(angle) * speed
   };
 }
 
@@ -44,10 +43,9 @@ function spawnLocalMort() {
 }
 
 function playVoice() {
+  if (!voice) return;
   voice.currentTime = 0;
-  voice.play().catch(() => {
-    // Playback may be blocked by browser media policy.
-  });
+  voice.play().catch(() => {});
 }
 
 function openMortWindow() {
@@ -73,7 +71,10 @@ function openMortWindow() {
 }
 
 function handleKeyDown(event) {
-  if (event.key === "Escape") {\n    window.close();\n    return;\n  }
+  if (event.key === "Escape") {
+    window.close();
+    return;
+  }
 
   playVoice();
   openMortWindow();
