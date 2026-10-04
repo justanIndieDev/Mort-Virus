@@ -8,11 +8,31 @@ function playVoice() {
   voice.play().catch(() => {});
 }
 
+// Windows opened by this page are moved by their opener.
+// This is more reliable than a popup trying to move itself.
+const movingWindows = [];
+
 function openMortWindow() {
+  const screenLeft = window.screen.availLeft;
+  const screenTop = window.screen.availTop;
+  const screenWidth = window.screen.availWidth;
+  const screenHeight = window.screen.availHeight;
+
+  const width = 400;
+  const height = 400;
+  const left = Math.round(
+    screenLeft + Math.random() * Math.max(0, screenWidth - width)
+  );
+  const top = Math.round(
+    screenTop + Math.random() * Math.max(0, screenHeight - height)
+  );
+
   const features = [
     "popup=yes",
-    "width=400",
-    "height=400",
+    `width=${width}`,
+    `height=${height}`,
+    `left=${left}`,
+    `top=${top}`,
     "resizable=yes",
     "scrollbars=no"
   ].join(",");
@@ -27,6 +47,14 @@ function openMortWindow() {
     try {
       child.focus();
     } catch (_) {}
+
+    movingWindows.push({
+      window: child,
+      x: left,
+      y: top,
+      vx: 4 + Math.random() * 2,
+      vy: 3 + Math.random() * 2
+    });
   }
 }
 
@@ -40,66 +68,52 @@ function handleKeyDown(event) {
   openMortWindow();
 }
 
-// Keep Mort stationary inside the window.
-const mort = document.querySelector(".mort");
-
-if (mort) {
-  mort.style.position = "absolute";
-  mort.style.left = "50%";
-  mort.style.top = "50%";
-  mort.style.transform = "translate(-50%, -50%)";
-}
-
-// Move the popup window itself and bounce it off the screen edges.
-let windowX = window.screenX;
-let windowY = window.screenY;
-
-const WINDOW_SPEED = 4;
-let windowVX = WINDOW_SPEED;
-let windowVY = WINDOW_SPEED * 0.8;
-
-function movePopup() {
-  // Only move windows opened by this Mort page.
-  if (!window.opener) return;
-
-  const maxX = Math.max(
-    0,
-    window.screen.availLeft + window.screen.availWidth - window.outerWidth
-  );
-  const maxY = Math.max(
-    0,
-    window.screen.availTop + window.screen.availHeight - window.outerHeight
-  );
-
-  windowX += windowVX;
-  windowY += windowVY;
-
-  if (windowX <= window.screen.availLeft) {
-    windowX = window.screen.availLeft;
-    windowVX = Math.abs(windowVX);
-  } else if (windowX >= maxX) {
-    windowX = maxX;
-    windowVX = -Math.abs(windowVX);
-  }
-
-  if (windowY <= window.screen.availTop) {
-    windowY = window.screen.availTop;
-    windowVY = Math.abs(windowVY);
-  } else if (windowY >= maxY) {
-    windowY = maxY;
-    windowVY = -Math.abs(windowVY);
-  }
-
-  try {
-    window.moveTo(Math.round(windowX), Math.round(windowY));
-  } catch (_) {}
-}
-
 window.addEventListener("keydown", handleKeyDown);
 
-window.addEventListener("load", () => {
-  windowX = window.screenX;
-  windowY = window.screenY;
-});
+function animatePopups() {
+  const screenLeft = window.screen.availLeft;
+  const screenTop = window.screen.availTop;
+  const screenRight = screenLeft + window.screen.availWidth;
+  const screenBottom = screenTop + window.screen.availHeight;
 
-setInterval(movePopup, 16);
+  for (let i = movingWindows.length - 1; i >= 0; i--) {
+    const item = movingWindows[i];
+
+    if (item.window.closed) {
+      movingWindows.splice(i, 1);
+      continue;
+    }
+
+    const width = item.window.outerWidth || 400;
+    const height = item.window.outerHeight || 400;
+    const maxX = screenRight - width;
+    const maxY = screenBottom - height;
+
+    item.x += item.vx;
+    item.y += item.vy;
+
+    if (item.x <= screenLeft) {
+      item.x = screenLeft;
+      item.vx = Math.abs(item.vx);
+    } else if (item.x >= maxX) {
+      item.x = maxX;
+      item.vx = -Math.abs(item.vx);
+    }
+
+    if (item.y <= screenTop) {
+      item.y = screenTop;
+      item.vy = Math.abs(item.vy);
+    } else if (item.y >= maxY) {
+      item.y = maxY;
+      item.vy = -Math.abs(item.vy);
+    }
+
+    try {
+      item.window.moveTo(Math.round(item.x), Math.round(item.y));
+    } catch (_) {}
+  }
+
+  requestAnimationFrame(animatePopups);
+}
+
+requestAnimationFrame(animatePopups);
