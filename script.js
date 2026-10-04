@@ -16,7 +16,7 @@ function openWindow() {
   return window.open(
     `${window.location.pathname}?mort=1${window.location.hash}`,
     "_blank",
-    "menubar=no,status=no,toolbar=no,resizable=no,width=400,height=400,titlebar=no,alwaysRaised=yes"
+    "noopener,noreferrer,menubar=no,status=no,toolbar=no,resizable=no,width=400,height=400,titlebar=no,alwaysRaised=yes"
   );
 }
 
@@ -84,8 +84,8 @@ function handleKeyDown(event) {
 
 window.addEventListener("keydown", handleKeyDown);
 
-if (window.opener) {
-  xPos = window.screenX;
-  yPos = window.screenY;
+const isPopup = new URLSearchParams(window.location.search).get("mort") === "1";
+
+if (isPopup) {
   playBall();
 }
