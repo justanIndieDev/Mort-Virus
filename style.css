@@ -19,15 +19,25 @@ body {
   background: white;
 }
 
-.mort {
+.mort-window {
   position: absolute;
   top: 0;
   left: 0;
+  width: 400px;
+  height: 400px;
+  background: white;
+  overflow: hidden;
+  will-change: transform;
+}
+
+.mort {
+  position: absolute;
   width: 120px;
   height: 120px;
+  left: 140px;
+  top: 140px;
   object-fit: contain;
   pointer-events: none;
   user-select: none;
   -webkit-user-drag: none;
-  will-change: transform;
 }
