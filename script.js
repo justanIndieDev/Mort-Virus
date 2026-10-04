@@ -41,7 +41,6 @@ function spawnLocalMort() {
 
   mortLayer.appendChild(mort);
   morts.push(instance);
-  counter.textContent = `Morts in this window: ${morts.length}`;
 }
 
 function playVoice() {
